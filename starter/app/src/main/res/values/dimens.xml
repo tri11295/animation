@@ -1,5 +1,21 @@
 <resources>
     <dimen name="fab_margin">16dp</dimen>
-
     <dimen name="default_text_size">20sp</dimen>
+    <dimen name="circle_radius">10dp</dimen>
+    <dimen name="circle_stroke_width">4dp</dimen>
+
+
+    <dimen name="clipRectRight">90dp</dimen>
+    <dimen name="clipRectBottom">90dp</dimen>
+    <dimen name="clipRectTop">0dp</dimen>
+    <dimen name="clipRectLeft">0dp</dimen>
+
+    <dimen name="rectInset">8dp</dimen>
+    <dimen name="smallRectOffset">40dp</dimen>
+
+    <dimen name="circleRadius">30dp</dimen>
+    <dimen name="textOffset">20dp</dimen>
+    <dimen name="strokeWidth">4dp</dimen>
+
+    <dimen name="textSize">18sp</dimen>
 </resources>
