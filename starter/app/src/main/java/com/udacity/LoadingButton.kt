@@ -1,5 +1,6 @@
 package com.udacity
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
@@ -38,13 +39,23 @@ class LoadingButton(context: Context, attrs: AttributeSet?) : View(context, attr
         textSize = resources.getDimension(R.dimen.textSize)
     }
 
+    var textLoading: String = "Loading"
+
     private var circleAngle = 0f
     private var progress = 0f
-
-    private var downloadJob: Job? = null
+    private val valueAnimator = ValueAnimator.ofFloat(0f, 1f)
 
     init {
-        background = context.getDrawable(R.color.colorPrimary)
+        val typedArray = context.obtainStyledAttributes(attrs, R.styleable.LoadingButton)
+        try {
+            with(typedArray) {
+                textLoading = typedArray.getString(R.styleable.LoadingButton_text_loading)
+                    ?: "Loading"
+                background = getDrawable(R.styleable.LoadingButton_background_color)
+            }
+        } finally {
+            typedArray.recycle()
+        }
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -52,7 +63,7 @@ class LoadingButton(context: Context, attrs: AttributeSet?) : View(context, attr
         if (isLoading) {
             canvas?.drawRect(0f, 0f, width * progress, height.toFloat(), squarePaint)
             drawProgressCircle(canvas)
-            drawTextDownLoad(context.getString(R.string.downloading_text), canvas)
+            drawTextDownLoad(textLoading, canvas)
         } else {
             drawTextDownLoad(context.getString(R.string.download_text), canvas)
         }
@@ -85,8 +96,8 @@ class LoadingButton(context: Context, attrs: AttributeSet?) : View(context, attr
         )
     }
 
-    private fun finishDownloading(onFinishListener: (() -> Unit)? = null) {
-        downloadJob?.cancel()
+    fun finishDownloading(onFinishListener: (() -> Unit)? = null) {
+        valueAnimator.cancel()
         isLoading = false
         isEnabled = true
         circleAngle = 0f
@@ -95,21 +106,18 @@ class LoadingButton(context: Context, attrs: AttributeSet?) : View(context, attr
         invalidate()
     }
 
-    fun startDownloadWithTime(time: Long, onFinishListener: (() -> Unit)? = null) {
+    fun startDownload() {
         if (isLoading) return
-        animationDuration = time
         isLoading = true
         isEnabled = false
-        downloadJob = CoroutineScope(Dispatchers.Main).launch {
-            val startTime = System.currentTimeMillis()
-            while (circleAngle < 360f && progress < 1) {
-                val elapsedTime = System.currentTimeMillis() - startTime
-                circleAngle = (elapsedTime.toFloat() / animationDuration) * 360f
-                progress = (elapsedTime.toFloat() / animationDuration)
-                invalidate()
-                delay(10) // Delay to achieve smooth animation
-            }
-            finishDownloading(onFinishListener)
+        valueAnimator.duration = 4000
+        valueAnimator.repeatCount = ValueAnimator.INFINITE
+        valueAnimator.addUpdateListener { animator ->
+            val animatedValue = animator.animatedValue as Float
+            circleAngle = animatedValue * 360f
+            progress = animatedValue
+            invalidate()
         }
+        valueAnimator.start()
     }
 }

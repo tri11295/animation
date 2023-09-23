@@ -2,6 +2,7 @@ package com.udacity
 
 import android.Manifest
 import android.app.DownloadManager
+import android.app.Notification.Action
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -80,6 +81,12 @@ class MainActivity : AppCompatActivity() {
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             downloadID = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            downloadID?.let {
+                sendNotification(it.toInt())
+                binding.btnLoading.finishDownloading {
+                    Toast.makeText(this@MainActivity, "Finish Download", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -91,12 +98,7 @@ class MainActivity : AppCompatActivity() {
         binding.run {
             if (rbGlide.isChecked || rbLoadApp.isChecked || rbRetrofit.isChecked) {
                 download(url)
-                binding.btnLoading.startDownloadWithTime(4000) {
-                    downloadID?.let {
-                        sendNotification(it.toInt())
-                    }
-                    Toast.makeText(this@MainActivity, "finish", Toast.LENGTH_SHORT).show()
-                }
+                binding.btnLoading.startDownload()
             } else {
                 Toast.makeText(
                     this@MainActivity,
@@ -118,7 +120,7 @@ class MainActivity : AppCompatActivity() {
 
         val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         downloadID =
-            downloadManager.enqueue(request) // enqueue puts the download request in the queue.
+            downloadManager.enqueue(request)
     }
 
     private fun createNotificationChannel() {
@@ -138,18 +140,25 @@ class MainActivity : AppCompatActivity() {
     private fun sendNotification(
         notificationId: Int
     ) {
-        val intent = Intent(this, DetailActivity::class.java)
-        intent.putExtra("key_file", fileName)
-        intent.putExtra("key_status", status)
-        intent.putExtra("key_description", description)
+        val intent = Intent(this, DetailActivity::class.java).apply {
+            putExtra("key_file", fileName)
+            putExtra("key_status", status)
+            putExtra("key_description", description)
+        }
+
         val pendingIntent =
-            PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+            PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.download)
-            .setContentTitle("Finish download")
-            .setContentText("Click here to go to detail screen")
-            .setContentIntent(pendingIntent)
+            .setContentTitle("Project: Design an App with Application Loading Status")
+            .setContentText("Finish Downloaded")
+            .addAction(R.drawable.detail2, "Click here to go to detail screen", pendingIntent)
             .setAutoCancel(true)
 
         val notificationManager = NotificationManagerCompat.from(this)
@@ -166,6 +175,11 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(receiver)
+    }
+
     companion object {
         private const val URL_GLIDE =
             "https://github.com/bumptech/glide/archive/master.zip"
@@ -179,7 +193,7 @@ class MainActivity : AppCompatActivity() {
         private const val LOAD_APP_DES =
             "In this project students will create an app to download a file from Internet by clicking on a custom-built button where:width of the button gets animated from left to right;text gets changed based on different states of the button;circle gets be animated from 0 to 360 degreesA notification will be sent once the download is complete. When a user clicks on notification, the user lands on detail activity and the notification gets dismissed. In detail activity, the status of the download will be displayed and animated via MotionLayout upon opening the activity."
         private const val RETROFIT_DES =
-            "Copyright 2013 Square, Inc.Licensed under the Apache License, Version 2.0 (the \"License\");you may not use this file except in compliance with the License.You may obtain a copy of the License athttp://www.apache.org/licenses/LICENSE-2.0Unless required by applicable law or agreed to in writing, softwaredistributed under the License is distributed on an \"AS IS\" BASIS,WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.See the License for the specific language governing permissions andlimitations under the License."
+            "RETROFIT - Copyright 2013 Square, Inc.Licensed under the Apache License, Version 2.0 (the \"License\");you may not use this file except in compliance with the License.You may obtain a copy of the License athttp://www.apache.org/licenses/LICENSE-2.0Unless required by applicable law or agreed to in writing, softwaredistributed under the License is distributed on an \"AS IS\" BASIS,WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.See the License for the specific language governing permissions andlimitations under the License."
         private const val GLIDE_DES =
             "Glide is a fast and efficient open source media management and image loading framework for Android that wraps media decoding, memory and disk caching, and resource pooling into a simple and easy to use interfaceGlide supports fetching, decoding, and displaying video stills, images, and animated GIFs. Glide includes a flexible API that allows developers to plug in to almost any network stack. By default Glide uses a custom HttpUrlConnection based stack, but also includes utility libraries plug in to Google's Volley project or Square's OkHttp library instead.\n" + "\n" + "Glide's primary focus is on making scrolling any kind of a list of images as smooth and fast as possible, but Glide is also effective for almost any case where you need to fetch, resize, and display a remote image."
     }
